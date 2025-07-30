@@ -1,8 +1,27 @@
+# requirements.txt
+
+# Core web framework
 flask
+
+# For interacting with OpenAI-compatible APIs (like Typhoon)
 openai
-pdfplumber
-pandas
+
+# For converting PDF pages to images
 pdf2image
+
+# For data manipulation and creating Excel files
+pandas
 openpyxl
+
+# For image processing and enhancement (newly added)
+opencv-python-headless
+numpy
+
+# For loading environment variables from .env file
 python-dotenv
+
+# Production-ready web server (optional for local dev, good for deployment)
 gunicorn
+
+# For PDF text/table extraction (if you add other features later)
+pdfplumber
