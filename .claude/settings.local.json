@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:huggingface.co)",
+      "Bash(set TYPHOON_OCR_API_KEY=sk-J7TD8YbapszNxnQfSsCK9sIZhebapGk3AeW2SbvNNQoWubYg)",
+      "WebFetch(domain:docs.opentyphoon.ai)",
+      "Bash(npm run dev:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": []
+  }
+}

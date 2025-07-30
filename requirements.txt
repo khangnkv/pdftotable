@@ -1,0 +1,8 @@
+flask
+openai
+pdfplumber
+pandas
+pdf2image
+openpyxl
+python-dotenv
+gunicorn

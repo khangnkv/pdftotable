@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Review Extracted Data - PDF to Excel</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: auto; 
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: #007bff;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+        }
+        .page-section {
+            border-bottom: 2px solid #eee;
+            padding: 20px;
+        }
+        .page-section:last-child {
+            border-bottom: none;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .page-content {
+            display: flex;
+            gap: 20px;
+        }
+        .pdf-preview {
+            flex: 1;
+            max-width: 50%;
+        }
+        .pdf-preview img {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .table-data {
+            flex: 1;
+            max-width: 50%;
+        }
+        .description-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+            table-layout: fixed;
+            position: relative;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            position: relative;
+        }
+        
+        /* Resizable columns */
+        .data-table th:not(:last-child) {
+            border-right: 1px solid #ddd;
+        }
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            background: transparent;
+            z-index: 10;
+        }
+        .resize-handle:hover,
+        .resize-handle.resizing {
+            background: #007bff;
+            opacity: 0.5;
+        }
+        .data-table th.resizing {
+            user-select: none;
+        }
+        .data-table th:nth-child(1) { width: 5%; }  /* Drag Handle */
+        .data-table th:nth-child(2) { width: 7%; }  /* Order */
+        .data-table th:nth-child(3) { width: 23%; } /* Name */
+        .data-table th:nth-child(4) { width: 8%; }  /* Quantity */
+        .data-table th:nth-child(5) { width: 7%; }  /* Unit */
+        .data-table th:nth-child(6) { width: 12%; } /* Material Unit Price */
+        .data-table th:nth-child(7) { width: 12%; } /* Material Total */
+        .data-table th:nth-child(8) { width: 12%; } /* Labor Unit Price */
+        .data-table th:nth-child(9) { width: 12%; } /* Labor Total */
+        .data-table th:nth-child(10) { width: 12%; } /* Grand Total */
+        .data-table th:nth-child(11) { width: 10%; } /* Actions */
+        
+        .data-table input, .data-table textarea {
+            width: 100%;
+            border: none;
+            padding: 4px;
+            font-size: 11px;
+            background: transparent;
+            resize: vertical;
+            min-height: 20px;
+            overflow: auto;
+            word-wrap: break-word;
+        }
+        
+        /* Drag and drop styles */
+        .data-table tbody tr {
+            cursor: move;
+            transition: background-color 0.2s ease;
+        }
+        .data-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .data-table tbody tr.dragging {
+            opacity: 0.5;
+            background-color: #e3f2fd;
+        }
+        .data-table tbody tr.drag-over {
+            border-top: 3px solid #007bff;
+        }
+        .drag-handle {
+            cursor: grab;
+            color: #6c757d;
+            padding: 0 8px;
+            font-size: 16px;
+        }
+        .drag-handle:hover {
+            color: #007bff;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        .data-table textarea {
+            min-height: 40px;
+            font-family: inherit;
+        }
+        .data-table input:focus, .data-table textarea:focus {
+            outline: 2px solid #007bff;
+            background-color: #fff3cd;
+        }
+        .expandable-cell {
+            position: relative;
+        }
+        .expand-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            cursor: pointer;
+            display: none;
+        }
+        .expandable-cell:hover .expand-btn {
+            display: block;
+        }
+        
+        /* Modal for expanded text view */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .close-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .modal textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        .add-row-btn, .remove-row-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 2px;
+            font-size: 11px;
+        }
+        .remove-row-btn {
+            background: #dc3545;
+        }
+        .add-row-btn:hover { background: #218838; }
+        .remove-row-btn:hover { background: #c82333; }
+        
+        .action-buttons {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+        }
+        .download-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+        }
+        .download-btn:hover { background: #0056b3; }
+        
+        .save-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .save-btn:hover { background: #218838; }
+        
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Review Extracted Data</h1>
+        <p>Review and edit the extracted table data before downloading. Compare with the original PDF images.</p>
+    </div>
+    
+    <div id="status-message" class="status-message"></div>
+    
+    {% for page_data in pages_data %}
+    <div class="page-section" data-page="{{ page_data.page_number }}">
+        <div class="page-header">
+            <h3>Page {{ page_data.page_number }}</h3>
+            <button class="save-btn" onclick="savePage({{ page_data.page_number }})">Save Changes</button>
+        </div>
+        
+        <div class="page-content">
+            <div class="pdf-preview">
+                <h4>Original PDF Page</h4>
+                <img src="data:image/jpeg;base64,{{ page_data.image_base64 }}" alt="Page {{ page_data.page_number }}">
+            </div>
+            
+            <div class="table-data">
+                <h4>Extracted Table Data</h4>
+                
+                <label for="description-{{ page_data.page_number }}">Description:</label>
+                <input type="text" 
+                       id="description-{{ page_data.page_number }}"
+                       class="description-input" 
+                       value="{{ page_data.extracted_data.description }}"
+                       placeholder="Enter description...">
+                
+                <div style="margin-bottom: 10px;">
+                    <button class="add-row-btn" onclick="addRow({{ page_data.page_number }})">+ Add Row</button>
+                </div>
+                
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table" id="table-{{ page_data.page_number }}">
+                        <thead>
+                            <tr>
+                                <th>⇅<div class="resize-handle"></div></th>
+                                <th>Order<div class="resize-handle"></div></th>
+                                <th>Name<div class="resize-handle"></div></th>
+                                <th>Quantity<div class="resize-handle"></div></th>
+                                <th>Unit<div class="resize-handle"></div></th>
+                                <th>Material Unit Price<div class="resize-handle"></div></th>
+                                <th>Material Total<div class="resize-handle"></div></th>
+                                <th>Labor Unit Price<div class="resize-handle"></div></th>
+                                <th>Labor Total<div class="resize-handle"></div></th>
+                                <th>Grand Total<div class="resize-handle"></div></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in page_data.extracted_data.table_items %}
+                            <tr draggable="true" data-order="{{ item.order }}">
+                                <td><span class="drag-handle" title="Drag to reorder">☰</span></td>
+                                <td><input type="number" value="{{ item.order }}" data-field="order"></td>
+                                <td class="expandable-cell">
+                                    <textarea data-field="name" title="{{ item.name }}">{{ item.name }}</textarea>
+                                    <button class="expand-btn" onclick="expandText(this)" title="Expand text">⇱</button>
+                                </td>
+                                <td><input type="number" step="0.01" value="{{ item.quantity }}" data-field="quantity"></td>
+                                <td><input type="text" value="{{ item.unit }}" data-field="unit"></td>
+                                <td><input type="number" step="0.01" value="{{ item.material_unit_price }}" data-field="material_unit_price"></td>
+                                <td><input type="number" step="0.01" value="{{ item.material_total }}" data-field="material_total"></td>
+                                <td><input type="number" step="0.01" value="{{ item.labor_unit_price }}" data-field="labor_unit_price"></td>
+                                <td><input type="number" step="0.01" value="{{ item.labor_total }}" data-field="labor_total"></td>
+                                <td><input type="number" step="0.01" value="{{ item.grand_total }}" data-field="grand_total"></td>
+                                <td><button class="remove-row-btn" onclick="removeRow(this)">Remove</button></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <div class="action-buttons">
+        <button class="download-btn" onclick="validateAndCombine()">✓ Validate & Combine All Pages</button>
+    </div>
+</div>
+
+<!-- Modal for expanded text view -->
+<div id="textModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Text</h3>
+            <button class="close-btn" onclick="closeModal()">✕ Close</button>
+        </div>
+        <textarea id="modalTextarea" placeholder="Enter your text here..."></textarea>
+        <div style="margin-top: 15px; text-align: center;">
+            <button class="save-btn" onclick="saveModalText()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const filename = "{{ filename }}";
+
+function addRow(pageNumber) {
+    const table = document.getElementById(`table-${pageNumber}`).getElementsByTagName('tbody')[0];
+    const newRow = table.insertRow();
+    
+    // Make row draggable
+    newRow.draggable = true;
+    newRow.setAttribute('data-order', table.rows.length);
+    
+    // Add drag handle
+    const dragCell = newRow.insertCell();
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '☰';
+    dragHandle.title = 'Drag to reorder';
+    dragCell.appendChild(dragHandle);
+    
+    const fields = ['order', 'name', 'quantity', 'unit', 'material_unit_price', 'material_total', 'labor_unit_price', 'labor_total', 'grand_total'];
+    
+    fields.forEach(field => {
+        const cell = newRow.insertCell();
+        
+        if (field === 'name') {
+            // Special handling for name field with textarea and expand button
+            cell.className = 'expandable-cell';
+            const textarea = document.createElement('textarea');
+            textarea.setAttribute('data-field', field);
+            textarea.value = '';
+            textarea.title = 'Click expand button for larger view';
+            cell.appendChild(textarea);
+            
+            const expandBtn = document.createElement('button');
+            expandBtn.className = 'expand-btn';
+            expandBtn.innerHTML = '⇱';
+            expandBtn.title = 'Expand text';
+            expandBtn.onclick = function() { expandText(this); };
+            cell.appendChild(expandBtn);
+        } else {
+            const input = document.createElement('input');
+            input.type = field === 'unit' ? 'text' : 'number';
+            if (input.type === 'number') input.step = '0.01';
+            input.value = field === 'order' ? table.rows.length : (input.type === 'number' ? '0' : '');
+            input.setAttribute('data-field', field);
+            cell.appendChild(input);
+        }
+    });
+    
+    // Add remove button
+    const actionCell = newRow.insertCell();
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-row-btn';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = function() { removeRow(this); };
+    actionCell.appendChild(removeBtn);
+    
+    // Add drag and drop event listeners to the new row
+    addDragListeners(newRow);
+}
+
+function removeRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+    updateOrderNumbers(row.closest('table'));
+}
+
+// Drag and drop functionality
+let draggedRow = null;
+
+function addDragListeners(row) {
+    row.addEventListener('dragstart', function(e) {
+        draggedRow = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.outerHTML);
+    });
+
+    row.addEventListener('dragend', function(e) {
+        this.classList.remove('dragging');
+        draggedRow = null;
+    });
+
+    row.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        if (draggedRow !== this) {
+            this.classList.add('drag-over');
+        }
+    });
+
+    row.addEventListener('dragleave', function(e) {
+        this.classList.remove('drag-over');
+    });
+
+    row.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        if (draggedRow !== this) {
+            const tbody = this.parentNode;
+            const draggedIndex = Array.from(tbody.children).indexOf(draggedRow);
+            const targetIndex = Array.from(tbody.children).indexOf(this);
+            
+            if (draggedIndex < targetIndex) {
+                tbody.insertBefore(draggedRow, this.nextSibling);
+            } else {
+                tbody.insertBefore(draggedRow, this);
+            }
+            
+            // Update order numbers after reordering
+            updateOrderNumbers(tbody.closest('table'));
+        }
+    });
+}
+
+function updateOrderNumbers(table) {
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+        const orderInput = rows[i].querySelector('input[data-field="order"]');
+        if (orderInput) {
+            orderInput.value = i + 1;
+        }
+        rows[i].setAttribute('data-order', i + 1);
+    }
+}
+
+// Column resizing functionality
+function initColumnResize() {
+    const tables = document.querySelectorAll('.data-table');
+    
+    tables.forEach(table => {
+        const resizeHandles = table.querySelectorAll('.resize-handle');
+        
+        resizeHandles.forEach(handle => {
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+            let column = null;
+            
+            handle.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                column = this.parentElement;
+                startX = e.clientX;
+                startWidth = parseInt(document.defaultView.getComputedStyle(column).width, 10);
+                
+                column.classList.add('resizing');
+                this.classList.add('resizing');
+                
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+                
+                e.preventDefault();
+            });
+            
+            function handleMouseMove(e) {
+                if (!isResizing) return;
+                
+                const width = startWidth + e.clientX - startX;
+                const minWidth = 50; // Minimum column width
+                const maxWidth = 500; // Maximum column width
+                
+                if (width >= minWidth && width <= maxWidth) {
+                    column.style.width = width + 'px';
+                }
+            }
+            
+            function handleMouseUp() {
+                isResizing = false;
+                if (column) {
+                    column.classList.remove('resizing');
+                    handle.classList.remove('resizing');
+                }
+                
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            }
+        });
+    });
+}
+
+// Initialize drag and drop for existing rows when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const tables = document.querySelectorAll('.data-table');
+    tables.forEach(table => {
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            addDragListeners(row);
+        });
+    });
+    
+    // Initialize column resizing
+    initColumnResize();
+});
+
+function getPageData(pageNumber) {
+    const table = document.getElementById(`table-${pageNumber}`);
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    const items = [];
+    
+    for (let row of rows) {
+        const inputs = row.querySelectorAll('input, textarea');
+        const item = {};
+        
+        for (let input of inputs) {
+            const field = input.getAttribute('data-field');
+            if (field) {
+                const value = input.value;
+                if (field === 'order') {
+                    item[field] = parseInt(value) || 0;
+                } else if (['quantity', 'material_unit_price', 'material_total', 'labor_unit_price', 'labor_total', 'grand_total'].includes(field)) {
+                    item[field] = parseFloat(value) || 0;
+                } else {
+                    item[field] = value;
+                }
+            }
+        }
+        items.push(item);
+    }
+    
+    return items;
+}
+
+// Modal functions for expanded text view
+let currentTextElement = null;
+
+function expandText(button) {
+    const cell = button.parentElement;
+    const textarea = cell.querySelector('textarea');
+    currentTextElement = textarea;
+    
+    // Set modal content
+    const modal = document.getElementById('textModal');
+    const modalTextarea = document.getElementById('modalTextarea');
+    modalTextarea.value = textarea.value;
+    
+    // Show modal
+    modal.style.display = 'block';
+    modalTextarea.focus();
+}
+
+function closeModal() {
+    document.getElementById('textModal').style.display = 'none';
+    currentTextElement = null;
+}
+
+function saveModalText() {
+    if (currentTextElement) {
+        const modalTextarea = document.getElementById('modalTextarea');
+        currentTextElement.value = modalTextarea.value;
+        currentTextElement.title = modalTextarea.value; // Update tooltip
+    }
+    closeModal();
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('textModal');
+    if (event.target === modal) {
+        closeModal();
+    }
+}
+
+function savePage(pageNumber) {
+    const items = getPageData(pageNumber);
+    const statusDiv = document.getElementById('status-message');
+    
+    fetch('/update_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            filename: filename,
+            page_number: pageNumber,
+            items: items
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            statusDiv.className = 'status-message status-success';
+            statusDiv.textContent = `Page ${pageNumber} saved successfully!`;
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        } else {
+            throw new Error('Save failed');
+        }
+    })
+    .catch(error => {
+        statusDiv.className = 'status-message status-error';
+        statusDiv.textContent = `Error saving page ${pageNumber}: ${error.message}`;
+        statusDiv.style.display = 'block';
+    });
+}
+
+function validateAndCombine() {
+    // Save all pages before validation
+    const pages = document.querySelectorAll('.page-section');
+    let savePromises = [];
+    
+    pages.forEach(pageSection => {
+        const pageNumber = parseInt(pageSection.getAttribute('data-page'));
+        const items = getPageData(pageNumber);
+        
+        savePromises.push(
+            fetch('/update_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    filename: filename,
+                    page_number: pageNumber,
+                    items: items
+                })
+            })
+        );
+    });
+    
+    Promise.all(savePromises)
+        .then(() => {
+            // All pages saved, now go to validation page
+            window.location.href = `/validate/${filename}`;
+        })
+        .catch(error => {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = 'status-message status-error';
+            statusDiv.textContent = `Error saving data: ${error.message}`;
+            statusDiv.style.display = 'block';
+        });
+}
+
+// Auto-calculate totals when relevant fields change
+document.addEventListener('input', function(e) {
+    if (e.target.matches('input[data-field="quantity"], input[data-field="material_unit_price"]')) {
+        const row = e.target.closest('tr');
+        const quantity = parseFloat(row.querySelector('input[data-field="quantity"]').value) || 0;
+        const unitPrice = parseFloat(row.querySelector('input[data-field="material_unit_price"]').value) || 0;
+        const materialTotal = row.querySelector('input[data-field="material_total"]');
+        materialTotal.value = (quantity * unitPrice).toFixed(2);
+    }
+    
+    if (e.target.matches('input[data-field="quantity"], input[data-field="labor_unit_price"]')) {
+        const row = e.target.closest('tr');
+        const quantity = parseFloat(row.querySelector('input[data-field="quantity"]').value) || 0;
+        const laborUnitPrice = parseFloat(row.querySelector('input[data-field="labor_unit_price"]').value) || 0;
+        const laborTotal = row.querySelector('input[data-field="labor_total"]');
+        laborTotal.value = (quantity * laborUnitPrice).toFixed(2);
+    }
+    
+    if (e.target.matches('input[data-field="material_total"], input[data-field="labor_total"]')) {
+        const row = e.target.closest('tr');
+        const materialTotal = parseFloat(row.querySelector('input[data-field="material_total"]').value) || 0;
+        const laborTotal = parseFloat(row.querySelector('input[data-field="labor_total"]').value) || 0;
+        const grandTotal = row.querySelector('input[data-field="grand_total"]');
+        grandTotal.value = (materialTotal + laborTotal).toFixed(2);
+    }
+});
+</script>
+</body>
+</html>

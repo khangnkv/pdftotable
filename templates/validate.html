@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Validate Combined Data - PDF to Excel</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: auto; 
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: #28a745;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+        }
+        .summary-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #eee;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .description-section {
+            padding: 15px 20px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            margin: 0 20px;
+            border-radius: 0 5px 5px 0;
+        }
+        .table-section {
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .combined-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            table-layout: fixed;
+        }
+        .combined-table th, .combined-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
+        }
+        .combined-table th:nth-child(1) { width: 6%; }  /* Order */
+        .combined-table th:nth-child(2) { width: 30%; } /* Name - wider for better text display */
+        .combined-table th:nth-child(3) { width: 8%; }  /* Quantity */
+        .combined-table th:nth-child(4) { width: 8%; }  /* Unit */
+        .combined-table th:nth-child(5) { width: 10%; } /* Material Unit Price */
+        .combined-table th:nth-child(6) { width: 10%; } /* Material Total */
+        .combined-table th:nth-child(7) { width: 10%; } /* Labor Unit Price */
+        .combined-table th:nth-child(8) { width: 10%; } /* Labor Total */
+        .combined-table th:nth-child(9) { width: 10%; } /* Grand Total */
+        .combined-table th:nth-child(10) { width: 8%; } /* Source Page */
+        .combined-table th {
+            background-color: #007bff;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .combined-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .combined-table tr:hover {
+            background-color: #e3f2fd;
+        }
+        .page-indicator {
+            background: #6c757d;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .action-buttons {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+        }
+        .download-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 0 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .download-btn:hover { 
+            background: #0056b3; 
+            transform: translateY(-1px);
+        }
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 10px;
+        }
+        .back-btn:hover { background: #545b62; }
+        
+        .validation-message {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .highlight-total {
+            font-weight: bold;
+            background-color: #fff3cd !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>✓ Data Validation Complete</h1>
+        <p>All pages have been combined into a single table. Review the final data before downloading.</p>
+    </div>
+    
+    <div class="validation-message">
+        <strong>Success!</strong> All {{ combined_data.total_pages }} pages have been processed and combined into {{ combined_data.total_items }} items.
+        Data is ready for download as a single Excel file.
+    </div>
+    
+    <div class="summary-section">
+        <div class="summary-stats">
+            <div class="stat-box">
+                <div class="stat-number">{{ combined_data.total_pages }}</div>
+                <div class="stat-label">Pages Processed</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">{{ combined_data.total_items }}</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">
+                    {{ "%.2f"|format(combined_data.table_items|map(attribute='grand_total')|sum) if combined_data.table_items else 0 }}
+                </div>
+                <div class="stat-label">Total Value</div>
+            </div>
+        </div>
+    </div>
+    
+    {% if combined_data.description %}
+    <div class="description-section">
+        <h4>Combined Description:</h4>
+        <p>{{ combined_data.description }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="table-section">
+        <h3>Combined Table Data ({{ combined_data.total_items }} items)</h3>
+        
+        {% if combined_data.table_items %}
+        <table class="combined-table">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>Material Unit Price</th>
+                    <th>Material Total</th>
+                    <th>Labor Unit Price</th>
+                    <th>Labor Total</th>
+                    <th>Grand Total</th>
+                    <th>Source Page</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in combined_data.table_items %}
+                <tr {% if loop.last %}class="highlight-total"{% endif %}>
+                    <td>{{ item.order }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit }}</td>
+                    <td>{{ "%.2f"|format(item.material_unit_price) }}</td>
+                    <td>{{ "%.2f"|format(item.material_total) }}</td>
+                    <td>{{ "%.2f"|format(item.labor_unit_price) }}</td>
+                    <td>{{ "%.2f"|format(item.labor_total) }}</td>
+                    <td>{{ "%.2f"|format(item.grand_total) }}</td>
+                    <td><span class="page-indicator">Page {{ item.source_page }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No table data found in the PDF.</p>
+        {% endif %}
+    </div>
+    
+    <div class="action-buttons">
+        <button class="back-btn" onclick="goBack()">← Back to Edit</button>
+        <button class="download-btn" onclick="downloadCombined()">📥 Download Combined Excel File</button>
+        <button class="back-btn" onclick="startOver()" style="background: #dc3545;">🔄 Start Over</button>
+    </div>
+</div>
+
+<script>
+const filename = "{{ filename }}";
+
+function goBack() {
+    window.location.href = `/review/${filename}`;
+}
+
+function startOver() {
+    if (confirm('Are you sure you want to start over? This will discard all current data.')) {
+        window.location.href = '/';
+    }
+}
+
+function downloadCombined() {
+    window.location.href = `/download/${filename}`;
+}
+
+// Add some visual feedback on hover
+document.querySelectorAll('.combined-table tr').forEach(row => {
+    row.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.01)';
+        this.style.transition = 'all 0.2s ease';
+    });
+    
+    row.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+    });
+});
+</script>
+</body>
+</html>

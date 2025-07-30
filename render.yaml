@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: pdf-to-excel-converter
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
+    plan: free
