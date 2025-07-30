@@ -1,12 +1,12 @@
 # PDF to Excel Converter
 
-A Flask web application that extracts table data from PDF files using OpenAI's GPT-4 vision model and converts the extracted data to Excel format. Specifically designed for Thai construction/material quotes and invoices.
+A Flask web application that extracts table data from PDF files using TYPHOON's models and converts the extracted data to Excel format. Specifically designed for Thai construction/material quotes and invoices.
 
 ## Features
 
 - Upload PDF files through a web interface
 - Convert PDF pages to images for AI processing
-- Extract structured table data using GPT-4 vision API
+- Extract structured table data using Typhoon2.1-Gemma3-12B API
 - Review and edit extracted data before export
 - Export to Excel format with combined data from all pages
 - Automatic file cleanup after processing
@@ -16,7 +16,7 @@ A Flask web application that extracts table data from PDF files using OpenAI's G
 ### Prerequisites
 
 - Python 3.8+
-- OpenAI API key with GPT-4 vision access
+- Typhoon API key (for OCR transcribing + tabular format generatation)
 - Poppler (for PDF to image conversion)
 
 ### Installation
@@ -24,7 +24,7 @@ A Flask web application that extracts table data from PDF files using OpenAI's G
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd pdf_to_excel_gpt
+cd pdftotable
 ```
 
 2. Install dependencies:
@@ -41,9 +41,9 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 ```
-Edit `.env` and add your OpenAI API key:
+Edit `.env` and add your TYPHOON API key:
 ```
-OPENAI_API_KEY=your_openai_api_key_here
+TYPHOON_API_KEY=your_typhoon_api_key_here
 ```
 
 ### Running the Application
@@ -78,7 +78,7 @@ The application expects tables with the following structure:
 ## File Structure
 
 ```
-pdf_to_excel_gpt/
+pdftotable/
 ├── app.py              # Main Flask application
 ├── templates/
 │   ├── index.html      # Upload form

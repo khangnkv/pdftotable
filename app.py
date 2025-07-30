@@ -29,15 +29,14 @@ if poppler_bin_path not in os.environ.get('PATH', ''):
 load_dotenv()
 
 # --- Typhoon API Setup ---
-TYPHOON_OCR_KEY = os.getenv('TYPHOON_OCR_API_KEY')
-OPEN_TYPHOON_KEY = os.getenv('OPEN_TYPHOON_API_KEY')
+TYPHOON_API_KEY = os.getenv('TYPHOON_API_KEY')
 
-if not TYPHOON_OCR_KEY or not OPEN_TYPHOON_KEY:
-    raise ValueError("Both TYPHOON_OCR_API_KEY and OPEN_TYPHOON_API_KEY must be set in the .env file.")
+if not TYPHOON_API_KEY:
+    raise ValueError("TYPHOON_API_KEY must be set in the .env file.")
 
 # Initialize separate clients for clarity
-ocr_client = OpenAI(base_url="https://api.opentyphoon.ai/v1", api_key=TYPHOON_OCR_KEY)
-instruct_client = OpenAI(base_url="https://api.opentyphoon.ai/v1", api_key=OPEN_TYPHOON_KEY)
+ocr_client = OpenAI(base_url="https://api.opentyphoon.ai/v1", api_key=TYPHOON_API_KEY)
+instruct_client = OpenAI(base_url="https://api.opentyphoon.ai/v1", api_key=TYPHOON_API_KEY)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'a-default-secret-key')
